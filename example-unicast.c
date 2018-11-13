@@ -52,11 +52,15 @@ PROCESS_THREAD(example_unicast_process, ev, data)
     
   PROCESS_BEGIN();
 
-  unicast_open(&uc, 146, &unicast_callbacks);
+  broadcast_open(&broadcast, 129, &broadcast_call);
+
+  unicast_open(&uc, 135, &unicast_callbacks);	
 
   while(1) {
     static struct etimer et;
     linkaddr_t addr;
+
+    SENSORS_ACTIVATE(sht11_sensor);
     
     etimer_set(&et, CLOCK_SECOND);
     
