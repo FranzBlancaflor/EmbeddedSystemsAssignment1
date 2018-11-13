@@ -19,8 +19,7 @@ AUTOSTART_PROCESSES(&example_unicast_process);
 static void
 recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 {
-  printf("unicast message received from %d.%d\n",
-	 from->u8[0], from->u8[1]);
+ 
 }
 
 static void
@@ -48,7 +47,6 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
     printf("broadcast message received from %d.%d: '%s'\n",
            from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
 
-    //Sending the temperature to the sink
 
     linkaddr_t destination;
     char str[10];
@@ -75,6 +73,13 @@ PROCESS_THREAD(example_unicast_process, ev, data)
 
   unicast_open(&uc, 135, &unicast_callbacks);	
 
+  int i = 0;
+
+  for(i = 0; i < 4; i++)
+  {
+	  values[i] = 0;
+  }
+
   while(1) {
     static struct etimer et;
 
@@ -86,9 +91,28 @@ PROCESS_THREAD(example_unicast_process, ev, data)
     
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-    int val = sht11_sensor.value(SHT11_SENSOR_TEMP);
-    
-    tempVal = (-39.60 + 0.01*val);
+    int store = sht11_sensor.value(SHT11_SENSOR_TEMP);
+
+    store = (-39.60 + 0.01 * store);
+
+    for(i = 0; i < 4; i++)
+    {
+	    if((i + 1) < 4)
+      {
+	    values[i] = values[i + 1];
+      }
+    }
+
+    values[3] = store;
+
+    store = 0;
+
+	  for(i = 0; i < 4; i++)
+	  {
+		  store = store + values[i];
+	  }
+
+    print_val = store / 4;
 
     }
     
