@@ -16,12 +16,14 @@
 PROCESS(example_unicast_process, "Example unicast");
 AUTOSTART_PROCESSES(&example_unicast_process);
 /*---------------------------------------------------------------------------*/
+//When the node receives a unicast message
 static void
 recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 {
  
 }
 
+//The node sends a unicast message to the broadcast
 static void
 sent_uc(struct unicast_conn *c, int status, int num_tx)
 {
@@ -33,34 +35,51 @@ sent_uc(struct unicast_conn *c, int status, int num_tx)
     dest->u8[0], dest->u8[1], status, num_tx);
 }
 
+//The struct that tells the node what methods to invoke
 /*---------------------------------------------------------------------------*/
 static const struct unicast_callbacks unicast_callbacks = {recv_uc, sent_uc};
 static struct unicast_conn uc;
 /*---------------------------------------------------------------------------*/
 
-static int tempVal;
+//Rolling Average that will be sent to collector
+static int temp;
 
-static int tempVals[4];
+//Holds the averages of the nodes
+static int readings[6];
+
+//When the nodes receive a broadcast message
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
     printf("broadcast message received from %d.%d: '%s'\n",
            from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
 
-
+    //Converting temp to string
     linkaddr_t destination;
-    char str[10];
-    sprintf(str, "%d", tempVal);
+
+    char str[5];
+
+    sprintf(str, "%d", temp);
+
+    //Copying temp to packet buffer and sending it to the collector
     packetbuf_copyfrom(str, 5);
+
     destination.u8[0] = from->u8[0];
+
     destination.u8[1] = from->u8[1];
-    if(!linkaddr_cmp(&destination, &linkaddr_node_addr)) {
+
+    if(!linkaddr_cmp(&destination, &linkaddr_node_addr)) 
+    {
         unicast_send(&uc, &destination);
     }
 
 }
+
+//The struct that tells the node what methods to invoke
+/*---------------------------------------------------------------------------*/
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
 static struct broadcast_conn broadcast;
+/*---------------------------------------------------------------------------*/
 
 
 PROCESS_THREAD(example_unicast_process, ev, data)
@@ -69,58 +88,65 @@ PROCESS_THREAD(example_unicast_process, ev, data)
     
   PROCESS_BEGIN();
 
+  //Open broadcast connection in band 129 and unicast connection in band 135
   broadcast_open(&broadcast, 129, &broadcast_call);
 
   unicast_open(&uc, 135, &unicast_callbacks);	
 
+  //Counter for the loop
   int i = 0;
 
-  for(i = 0; i < 4; i++)
+  //Populate arrays with 0's
+  for(i = 0; i < 6; i++)
   {
-	  values[i] = 0;
+	  readings[i] = 0;
   }
 
-  while(1) {
-    static struct etimer et;
+  while(1) 
+  {
+   static struct etimer et;
 
-    linkaddr_t addr;
+   linkaddr_t addr;
 
-    SENSORS_ACTIVATE(sht11_sensor);
-    
-    etimer_set(&et, CLOCK_SECOND);
-    
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+   //Activate sensors
+   SENSORS_ACTIVATE(sht11_sensor);
 
-    int store = sht11_sensor.value(SHT11_SENSOR_TEMP);
+   etimer_set(&et, CLOCK_SECOND);
 
-    store = (-39.60 + 0.01 * store);
+   PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-    for(i = 0; i < 4; i++)
+   //Gets the temperature
+   int val = sht11_sensor.value(SHT11_SENSOR_TEMP);
+ 
+   //Makes it into Celcius
+   temp = (-39.60 + 0.01*val);
+
+   //Push out the first value and makes the last index free to put new value
+   for( i = 0; i < 6; i++)
     {
-	    if((i + 1) < 4)
-      {
-	    values[i] = values[i + 1];
-      }
+      if((i+1) < 6){
+      readings[i] = readings[i+1];
+    }
+ 
+    }
+      readings[5] = temp;
+
+   val = 0;
+
+   //Gets the sum
+   for( i = 0; i < 6; i++)
+    {
+      val = val + readings[i];
     }
 
-    values[3] = store;
+   //Gets the average
+   temp = val/6;
 
-    store = 0;
+   etimer_reset(&et);
+  
+   SENSORS_DEACTIVATE(sht11_sensor);
+}
 
-	  for(i = 0; i < 4; i++)
-	  {
-		  store = store + values[i];
-	  }
-
-    print_val = store / 4;
-
-    }
-    
-    etimer_reset(&et);
-
-    SENSORS_DEACTIVATE(sht11_sensor);
-  }
-
-  PROCESS_END();
+PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
