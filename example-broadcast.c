@@ -34,7 +34,7 @@ static struct broadcast_conn broadcast;
 static void
 recv_uc(struct unicast_conn *c, const linkaddr_t *from) 
 {
-  printf("Unicast message received from %d.%d: '%s'\n",
+  printf("Unicast message received from %d.%d: Temp Avg is = '%s'\n",
          from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
 }
 
