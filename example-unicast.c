@@ -22,22 +22,10 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 {
  
 }
-/*
-//The node sends a unicast message to the broadcast
-static void
-sent_uc(struct unicast_conn *c, int status, int num_tx)
-{
-  const linkaddr_t *dest = packetbuf_addr(PACKETBUF_ADDR_RECEIVER);
-  if(linkaddr_cmp(dest, &linkaddr_null)) {
-    return;
-  }
-  printf("unicast message sent to %d.%d: status %d num_tx %d\n",
-    dest->u8[0], dest->u8[1], status, num_tx);
-}
 
 //The struct that tells the node what methods to invoke
 /*---------------------------------------------------------------------------*/
-static const struct unicast_callbacks unicast_callbacks = {recv_uc};//, sent_uc};
+static const struct unicast_callbacks unicast_callbacks = {recv_uc};
 static struct unicast_conn uc;
 /*---------------------------------------------------------------------------*/
 
