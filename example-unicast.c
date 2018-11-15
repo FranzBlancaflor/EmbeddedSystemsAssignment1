@@ -22,7 +22,7 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 {
  
 }
-
+/*
 //The node sends a unicast message to the broadcast
 static void
 sent_uc(struct unicast_conn *c, int status, int num_tx)
@@ -37,7 +37,7 @@ sent_uc(struct unicast_conn *c, int status, int num_tx)
 
 //The struct that tells the node what methods to invoke
 /*---------------------------------------------------------------------------*/
-static const struct unicast_callbacks unicast_callbacks = {recv_uc, sent_uc};
+static const struct unicast_callbacks unicast_callbacks = {recv_uc};//, sent_uc};
 static struct unicast_conn uc;
 /*---------------------------------------------------------------------------*/
 
@@ -51,7 +51,7 @@ static int readings[6];
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
-    printf("broadcast message received from %d.%d: '%s'\n",
+    printf("Broadcast message received from %d.%d: '%s'\n",
            from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
 
     //Converting temp to string
